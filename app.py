@@ -58,6 +58,11 @@ def analysis_tab(key: str, suggested: list[str]) -> None:
     key        — unique string to namespace Streamlit widget keys
     suggested  — list of pre-written trend strings for the domain
     """
+    # Initialise per-tab history in session_state
+    hist_key = f"{key}_history"
+    if hist_key not in st.session_state:
+        st.session_state[hist_key] = []  # list of {trend, result, timestamp}
+
     options = suggested + ["Custom — type below"]
     choice  = st.selectbox("Suggested trend", options, key=f"{key}_select")
 
@@ -83,9 +88,29 @@ def analysis_tab(key: str, suggested: list[str]) -> None:
     if run and trend.strip():
         with st.spinner("Searching and reasoning through the value chain…"):
             result = run_derivative_analysis(trend.strip())
+
+        # Prepend to history so most recent is first
+        from datetime import datetime
+        st.session_state[hist_key].insert(0, {
+            "trend": trend.strip(),
+            "result": result,
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        })
+
         st.markdown(_render(result), unsafe_allow_html=True)
+
     elif not trend.strip():
         st.info("Select or enter a trend above and click **Run analysis**.")
+
+    # --- History -----------------------------------------------------------
+    history = st.session_state[hist_key]
+    if history:
+        st.divider()
+        st.subheader(f"History ({len(history)} run{'s' if len(history) != 1 else ''})")
+        for i, entry in enumerate(history):
+            label = f"**{entry['timestamp']}** — {entry['trend'][:80]}{'…' if len(entry['trend']) > 80 else ''}"
+            with st.expander(label, expanded=(i == 0 and not run)):
+                st.markdown(_render(entry["result"]), unsafe_allow_html=True)
 
 
 # ---------------------------------------------------------------------------

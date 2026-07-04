@@ -1,0 +1,45 @@
+[
+  { "ticker": "CCJ",      "name": "Cameco",                      "segment": "upstream",     "country": "CA", "exchange": "NYSE",   "sec_filer": true,  "tradeable": true,  "active": true },
+  { "ticker": "NXE",      "name": "NexGen Energy",               "segment": "upstream",     "country": "CA", "exchange": "NYSE",   "sec_filer": true,  "tradeable": true,  "active": true },
+  { "ticker": "DNN",      "name": "Denison Mines",               "segment": "upstream",     "country": "CA", "exchange": "NYSE-A", "sec_filer": true,  "tradeable": true,  "active": true },
+  { "ticker": "UEC",      "name": "Uranium Energy",              "segment": "upstream",     "country": "US", "exchange": "NYSE-A", "sec_filer": true,  "tradeable": true,  "active": true },
+  { "ticker": "UUUU",     "name": "Energy Fuels",                "segment": "upstream",     "country": "US", "exchange": "NYSE-A", "sec_filer": true,  "tradeable": true,  "active": true },
+  { "ticker": "URG",      "name": "Ur-Energy",                   "segment": "upstream",     "country": "US", "exchange": "NYSE-A", "sec_filer": true,  "tradeable": true,  "active": true },
+  { "ticker": "EU",       "name": "enCore Energy",               "segment": "upstream",     "country": "US", "exchange": "NASDAQ", "sec_filer": true,  "tradeable": true,  "active": true },
+  { "ticker": "ISOU",     "name": "IsoEnergy",                   "segment": "upstream",     "country": "CA", "exchange": "NYSE-A", "sec_filer": true,  "tradeable": true,  "active": true },
+  { "ticker": "KAP.IL",   "name": "Kazatomprom",                 "segment": "upstream",     "country": "KZ", "exchange": "LSE",    "sec_filer": false, "tradeable": true,  "active": true },
+  { "ticker": "PDN.AX",   "name": "Paladin Energy",              "segment": "upstream",     "country": "AU", "exchange": "ASX",    "sec_filer": false, "tradeable": true,  "active": true },
+  { "ticker": "SRUUF",    "name": "Sprott Physical Uranium Trust","segment": "upstream",    "country": "CA", "exchange": "OTC",    "sec_filer": false, "tradeable": true,  "active": true },
+
+  { "ticker": "LEU",      "name": "Centrus Energy",              "segment": "midstream",    "country": "US", "exchange": "NYSE-A", "sec_filer": true,  "tradeable": true,  "active": true },
+  { "ticker": "ASPI",     "name": "ASP Isotopes",                "segment": "midstream",    "country": "US", "exchange": "NASDAQ", "sec_filer": true,  "tradeable": true,  "active": true },
+  { "ticker": "LTBR",     "name": "Lightbridge",                 "segment": "midstream",    "country": "US", "exchange": "NASDAQ", "sec_filer": true,  "tradeable": true,  "active": true },
+
+  { "ticker": "OKLO",     "name": "Oklo",                        "segment": "reactor-tech", "country": "US", "exchange": "NYSE",   "sec_filer": true,  "tradeable": true,  "active": true },
+  { "ticker": "SMR",      "name": "NuScale Power",               "segment": "reactor-tech", "country": "US", "exchange": "NYSE",   "sec_filer": true,  "tradeable": true,  "active": true },
+  { "ticker": "NNE",      "name": "Nano Nuclear Energy",         "segment": "reactor-tech", "country": "US", "exchange": "NASDAQ", "sec_filer": true,  "tradeable": true,  "active": true },
+  { "ticker": "RR.L",     "name": "Rolls-Royce",                 "segment": "reactor-tech", "country": "GB", "exchange": "LSE",    "sec_filer": false, "tradeable": true,  "active": true },
+
+  { "ticker": "BWXT",     "name": "BWX Technologies",            "segment": "components",   "country": "US", "exchange": "NYSE",   "sec_filer": true,  "tradeable": true,  "active": true },
+  { "ticker": "GEV",      "name": "GE Vernova",                  "segment": "components",   "country": "US", "exchange": "NYSE",   "sec_filer": true,  "tradeable": true,  "active": true },
+  { "ticker": "FLR",      "name": "Fluor",                       "segment": "components",   "country": "US", "exchange": "NYSE",   "sec_filer": true,  "tradeable": true,  "active": true },
+  { "ticker": "7011.T",   "name": "Mitsubishi Heavy Industries",  "segment": "components",  "country": "JP", "exchange": "TSE",    "sec_filer": false, "tradeable": true,  "active": true },
+  { "ticker": "6501.T",   "name": "Hitachi",                     "segment": "components",   "country": "JP", "exchange": "TSE",    "sec_filer": false, "tradeable": true,  "active": true },
+  { "ticker": "034020.KS","name": "Doosan Enerbility",           "segment": "components",   "country": "KR", "exchange": "KRX",    "sec_filer": false, "tradeable": true,  "active": true },
+
+  { "ticker": "CEG",      "name": "Constellation Energy",        "segment": "downstream",   "country": "US", "exchange": "NASDAQ", "sec_filer": true,  "tradeable": true,  "active": true },
+  { "ticker": "VST",      "name": "Vistra",                      "segment": "downstream",   "country": "US", "exchange": "NYSE",   "sec_filer": true,  "tradeable": true,  "active": true },
+  { "ticker": "TLN",      "name": "Talen Energy",                "segment": "downstream",   "country": "US", "exchange": "NASDAQ", "sec_filer": true,  "tradeable": true,  "active": true },
+  { "ticker": "KEP",      "name": "Korea Electric Power",        "segment": "downstream",   "country": "KR", "exchange": "NYSE",   "sec_filer": true,  "tradeable": true,  "active": true },
+  { "ticker": "FORTUM.HE","name": "Fortum",                      "segment": "downstream",   "country": "FI", "exchange": "HEL",    "sec_filer": false, "tradeable": true,  "active": true },
+
+  { "ticker": null, "name": "Westinghouse",      "segment": "reactor-tech", "country": "US", "exchange": null, "sec_filer": false, "tradeable": false, "active": true },
+  { "ticker": null, "name": "Orano",             "segment": "midstream",    "country": "FR", "exchange": null, "sec_filer": false, "tradeable": false, "active": true },
+  { "ticker": null, "name": "Urenco",            "segment": "midstream",    "country": "GB", "exchange": null, "sec_filer": false, "tradeable": false, "active": true },
+  { "ticker": null, "name": "EDF",               "segment": "downstream",   "country": "FR", "exchange": null, "sec_filer": false, "tradeable": false, "active": true },
+  { "ticker": null, "name": "TerraPower",        "segment": "reactor-tech", "country": "US", "exchange": null, "sec_filer": false, "tradeable": false, "active": true },
+  { "ticker": null, "name": "X-energy",          "segment": "reactor-tech", "country": "US", "exchange": null, "sec_filer": false, "tradeable": false, "active": true },
+  { "ticker": null, "name": "Antares Nuclear",   "segment": "reactor-tech", "country": "US", "exchange": null, "sec_filer": false, "tradeable": false, "active": true },
+  { "ticker": null, "name": "Valar Atomics",     "segment": "reactor-tech", "country": "US", "exchange": null, "sec_filer": false, "tradeable": false, "active": true },
+  { "ticker": null, "name": "Radiant Industries","segment": "reactor-tech", "country": "US", "exchange": null, "sec_filer": false, "tradeable": false, "active": true }
+]

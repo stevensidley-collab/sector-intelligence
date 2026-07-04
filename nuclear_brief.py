@@ -204,12 +204,9 @@ def run_nuclear_brief(segment: str = "all") -> str:
             cik = _resolve_cik(ticker, session)
             if cik:
                 filings = _fetch_sec_filings(cik, session)
-            else:
-                filings_note = "CIK not found in SEC EDGAR"
+            # CIK not found — skip silently, fall through to news-only
         elif not sec_filer:
             filings_note = "news-only coverage (not an SEC filer)"
-        else:
-            filings_note = "No ticker — cannot resolve CIK"
 
         by_seg[seg]["tradeable"].append({
             "name": name,
@@ -259,8 +256,8 @@ def run_nuclear_brief(segment: str = "all") -> str:
                 if not e["sec_filer"]:
                     label += " — news-only coverage (not an SEC filer)"
                 lines.append(label)
-                if e["filings_note"] and e["sec_filer"]:
-                    lines.append(f"  _Filings: {e['filings_note']}_")
+                if e["filings_note"] and not e["sec_filer"]:
+                    lines.append(f"  _({e['filings_note']})_")
                 if e["news"]:
                     for n in e["news"]:
                         lines.append(f"  - [{n['title']}]({n['url']})")

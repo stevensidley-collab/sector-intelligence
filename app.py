@@ -1,8 +1,13 @@
 """
 Sector Intelligence — Streamlit UI.
 
-Primary:   Second-derivative supply-chain analysis (demand trend → bottleneck hypothesis)
-Secondary: Nuclear sector brief (SEC filings + news, grouped by segment)
+Three second-derivative analysis tabs:
+  🤖 AI      — AI infrastructure demand trends
+  ⚛️ Nuclear  — nuclear energy demand and supply trends
+  🔮 Quantum  — quantum computing commercialisation trends
+
+Each tab uses the same bottleneck-tracing engine with domain-specific
+suggested prompts. Output is a verified hypothesis, not a recommendation.
 """
 
 import html
@@ -11,7 +16,6 @@ import re
 import streamlit as st
 
 from derivative_analysis import run_derivative_analysis
-from nuclear_brief import SEGMENTS_ORDER, load_watchlist, run_nuclear_brief
 
 st.set_page_config(
     page_title="Sector Intelligence",
@@ -19,16 +23,15 @@ st.set_page_config(
     layout="wide",
 )
 st.title("🔬 Sector Intelligence")
-st.caption("Second-derivative analysis · Nuclear sector brief · Not investment advice")
+st.caption("Second-derivative supply-chain analysis · Verified bottleneck hypotheses · Not investment advice")
 
 # ---------------------------------------------------------------------------
-# Link renderer — opens every markdown link in a new browser tab
+# Link renderer — opens every markdown link in a new tab
 # ---------------------------------------------------------------------------
 _LINK_RE = re.compile(r"\[([^\]]+)\]\((https?://[^\s)]+)\)")
 
 
 def _render(text: str) -> str:
-    """Escape raw content; convert [label](url) links to target=_blank anchors."""
     stash: dict = {}
 
     def _stash(m):
@@ -47,75 +50,88 @@ def _render(text: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Tabs
+# Shared analysis widget — renders identically in each tab
 # ---------------------------------------------------------------------------
-tab_analysis, tab_brief = st.tabs(["🔬 Second-Derivative Analysis", "📋 Nuclear Brief"])
+def analysis_tab(key: str, suggested: list[str]) -> None:
+    """
+    Render a trend selector + run button for one domain tab.
+    key        — unique string to namespace Streamlit widget keys
+    suggested  — list of pre-written trend strings for the domain
+    """
+    options = suggested + ["Custom — type below"]
+    choice  = st.selectbox("Suggested trend", options, key=f"{key}_select")
 
+    if choice == "Custom — type below":
+        trend = st.text_area(
+            "Custom trend",
+            placeholder="Describe the demand force you want to trace…",
+            height=80,
+            key=f"{key}_custom",
+        )
+    else:
+        trend = choice
+        st.text_area(
+            "Trend (editable)",
+            value=trend,
+            height=80,
+            key=f"{key}_display",
+        )
 
-# ── Tab 1: Second-Derivative Analysis ──────────────────────────────────────
-with tab_analysis:
-    st.subheader("Second-Derivative Analysis")
-    st.markdown(
-        "Enter a demand trend. The tool traces the value chain to find genuine "
-        "supply **bottlenecks** — concentrated, hard-to-substitute chokepoints — "
-        "and names who sits on them. Verification searches are run before any "
-        "claim is asserted. Output is a hypothesis, not a recommendation."
-    )
+    run = st.button("Run analysis", type="primary", key=f"{key}_run",
+                    disabled=not trend.strip())
 
-    trend = st.text_area(
-        "Trend",
-        placeholder=(
-            "e.g. AI compute demand driving electricity consumption, "
-            "or onshoring of semiconductor fabs driving demand for ultra-pure water"
-        ),
-        height=80,
-    )
-
-    run_btn = st.button("Run analysis", type="primary", disabled=not trend.strip())
-
-    if run_btn and trend.strip():
-        with st.spinner("Running second-derivative analysis — searching and reasoning…"):
+    if run and trend.strip():
+        with st.spinner("Searching and reasoning through the value chain…"):
             result = run_derivative_analysis(trend.strip())
         st.markdown(_render(result), unsafe_allow_html=True)
     elif not trend.strip():
-        st.info("Enter a trend above and click **Run analysis**.")
+        st.info("Select or enter a trend above and click **Run analysis**.")
 
 
-# ── Tab 2: Nuclear Brief ───────────────────────────────────────────────────
-with tab_brief:
-    st.subheader("Nuclear Sector Brief")
+# ---------------------------------------------------------------------------
+# Tab definitions
+# ---------------------------------------------------------------------------
+tab_ai, tab_nuclear, tab_quantum = st.tabs([
+    "🤖 AI",
+    "⚛️ Nuclear",
+    "🔮 Quantum",
+])
+
+with tab_ai:
+    st.subheader("AI Infrastructure — Second-Derivative Analysis")
     st.markdown(
-        "On-demand brief of SEC EDGAR filings and recent news, "
-        "grouped by segment and split into CONFIRMED / CHATTER / CONTEXT tiers."
+        "Trace AI demand trends downstream to find supply bottlenecks: "
+        "the concentrated, hard-to-substitute chokepoints where pricing power sits."
     )
+    analysis_tab("ai", [
+        "AI compute demand driving data-centre electricity consumption",
+        "Hyperscaler GPU cluster buildout driving demand for high-bandwidth memory",
+        "AI inference workloads shifting to edge devices, driving demand for low-power silicon",
+        "AI training scale-up driving demand for advanced packaging and CoWoS capacity",
+    ])
 
-    col_sel, col_meta = st.columns([2, 3])
+with tab_nuclear:
+    st.subheader("Nuclear Energy — Second-Derivative Analysis")
+    st.markdown(
+        "Trace nuclear demand trends to find supply bottlenecks: "
+        "where capacity is genuinely constrained along the fuel cycle and reactor supply chain."
+    )
+    analysis_tab("nuclear", [
+        "AI data-centre power demand reigniting nuclear power purchase agreements",
+        "Western governments de-risking uranium supply chains away from Russian enrichment",
+        "SMR licensing momentum creating demand for specialised reactor-grade components",
+        "Utility fleet-life extensions driving demand for nuclear fuel fabrication capacity",
+    ])
 
-    with col_sel:
-        segment = st.selectbox(
-            "Segment",
-            options=["all"] + SEGMENTS_ORDER,
-            format_func=lambda s: "All segments" if s == "all" else s.title(),
-        )
-        generate = st.button("Generate brief", type="primary")
-        st.caption(
-            "A full brief queries Tavily once per company (~39 calls). "
-            "Segment-scoped briefs are faster."
-        )
-
-    with col_meta:
-        entries   = load_watchlist(segment)
-        tradeable = [e for e in entries if e.get("tradeable")]
-        context   = [e for e in entries if not e.get("tradeable")]
-        st.metric("Tradeable names", len(tradeable))
-        st.metric("Context names", len(context))
-        st.metric(
-            "SEC filers",
-            sum(1 for e in tradeable if e.get("sec_filer")),
-        )
-
-    if generate:
-        label = "All segments" if segment == "all" else segment.title()
-        with st.spinner(f"Assembling {label} brief — fetching filings and news…"):
-            brief = run_nuclear_brief(segment)
-        st.markdown(_render(brief), unsafe_allow_html=True)
+with tab_quantum:
+    st.subheader("Quantum Computing — Second-Derivative Analysis")
+    st.markdown(
+        "Trace quantum commercialisation trends to find supply bottlenecks: "
+        "where the enabling materials, components, and services are genuinely scarce."
+    )
+    analysis_tab("quantum", [
+        "Quantum computing commercialisation driving demand for dilution refrigerators",
+        "Photonic quantum computing scaling driving demand for ultra-low-loss optical fibre",
+        "Quantum hardware scale-up driving demand for specialised microwave components and cryogenic electronics",
+        "Government quantum investment programmes driving demand for trapped-ion and superconducting qubit foundry capacity",
+    ])

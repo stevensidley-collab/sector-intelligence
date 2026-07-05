@@ -15,9 +15,12 @@ evidence. It does NOT predict rotation. Most months the honest answer is
 
 import json
 import os
+import re
+from html.parser import HTMLParser
 from pathlib import Path
 
 import anthropic
+import requests
 from dotenv import load_dotenv
 from tavily import TavilyClient
 
@@ -116,16 +119,22 @@ For each active allocator below, run current-dated searches for:
   (3) For allocators tagged "published-thesis": recent essays, posts, or
       public thesis shifts — but treat these as SOFT signals only (see below)
 
-HARD vs SOFT signal rule — actions over words:
+HARD vs SOFT signal rule — actions over words. Three tiers:
   HARD signal — a fund actually raised, LP capital deployed, a concrete
     new mandate, a signed deal: weight this equally with other hard
     fund-formation evidence.
-  SOFT signal — a partner blog post, podcast appearance, "why X is the
-    future" essay, or thesis content: this is PROMOTIONAL. VCs talk their
-    book to sustain the narrative around positions they already hold;
-    published enthusiasm is systematically over-optimistic. A SOFT signal
-    alone CANNOT move a candidate rotation's strength rating. Always flag:
-    ⚠️ SOFT — VC published thesis, treat as promotional, not independent.
+  SOFT signal — a formal partner blog post, published thesis essay, or
+    official fund letter: PROMOTIONAL. VCs sustain narratives around
+    positions they already hold; published enthusiasm is systematically
+    over-optimistic. Cannot move a candidate's strength rating alone.
+    Flag: ⚠️ SOFT — VC published thesis, promotional.
+  SOFTER signal — informal VC commentary: podcast remarks, conference
+    quotes, Twitter/X posts, off-the-cuff interviews. Even cheaper to
+    produce than formal essays, even more self-interested. Its only value
+    is earliness — it may surface attention drift before formal writing
+    does, which helps spot convergence sooner. Never let it drive a
+    conclusion. Flag: ⚠️ SOFTER — informal VC commentary, treat as
+    directional noise only.
 
 INTERPRETATION NOTE (include explicitly in your output):
 VCs invest in private companies — their direct beneficiaries are not
@@ -203,6 +212,65 @@ evidence should accumulate across successive monthly scans before any
 conclusion is drawn.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STAGE 5 — SELECTIVE DEEP READ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+After completing signals 1–4, review ALL sources surfaced (URLs from Tavily
+results and commentator searches). Identify the 5–10 that are most
+signal-rich — i.e. most likely to contain primary data, concrete capital
+commitments, or substantive analysis rather than summaries or opinion.
+
+For those selected sources, call web_fetch on each URL to retrieve the full
+text. Read it. Do NOT fetch the rest — leave them as snippets.
+
+Every source used in your output MUST be tagged with one of:
+  [fully read]             — web_fetch succeeded, full content available
+  [snippet only]           — Tavily snippet only, not fetched
+  [referenced, not readable] — paywalled, 403, non-HTML, or fetch failed
+
+Never represent a source as having been read when it was not. If a high-value
+source is paywalled, label it "referenced, not readable" and note you could
+only see the snippet or headline.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STAGE 6 — SYNTHESISE (causal picture)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Reason across the whole gathered set — fully-read sources and snippets
+together — to build the causal picture. Ask:
+
+  • Is there convergent evidence of a capital shift? Across which signal
+    types? In which direction?
+  • If yes: what is DRIVING it? A policy catalyst? Exhaustion in the
+    current trade? A genuinely new thesis gaining independent traction?
+  • If no: what is the evidence FOR stability — i.e. why is capital NOT
+    rotating? Name the specific sources that support this.
+
+Every causal claim must:
+  (a) cite the specific source(s) it rests on, and
+  (b) note whether those sources were [fully read] or [snippet only].
+
+A conclusion grounded in fully-read primary sources is STRONG.
+A conclusion resting only on snippets or paywalled reports must be
+labelled TENTATIVE — sourced from snippets, not verified in depth.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STAGE 7 — EXPLAIN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Produce the "Why" section: a causal account of why there has or has not
+been a capital shift this month. Structure it as a chain of reasoning:
+each link stated explicitly, each link confidence-rated (high / medium /
+low), each link noting the read-depth of its supporting sources.
+
+A well-evidenced NULL result — "no meaningful change this month, and here
+is the evidence for that" — is a FIRST-CLASS output, delivered with the
+same confidence as a positive finding. Most months, the honest "why" is
+"it hasn't changed because [X, Y, Z]." Prefer this over manufacturing a
+narrative.
+
+Do NOT construct a rotation story unless the evidence genuinely supports
+it. The cardinal sin is a confident-sounding causal narrative built on
+thin, snippet-only, or paywalled sources.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 OUTPUT FORMAT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -246,6 +314,31 @@ For each commentator searched, one line:
   [Name] — [still on current themes / drifting toward X / unclear] — [source date]
 Summarise any clear directional cluster across multiple commentators.
 
+## DEEP-READ SOURCES
+List every source you web_fetched, with outcome:
+| Source | URL | Read depth | Signal value |
+|--------|-----|------------|--------------|
+(one row per fetched URL; snippet-only sources need not be listed here
+unless they are load-bearing for a conclusion)
+
+## SYNTHESIS — CAUSAL PICTURE
+Three to five paragraphs. Reason across all gathered material. For each
+causal claim, cite the source and its read-depth in brackets.
+Example: "Policy spending on X accelerated ([source, fully read]) while
+fund formation into Y shows no new activity ([source, snippet only] —
+tentative)."
+Close with a one-line summary: convergent / divergent / no signal.
+
+## WHY THERE HAS (OR HAS NOT) BEEN A CHANGE
+Chain of reasoning, each link on its own line:
+  [Link 1] [confidence: high/medium/low] [source read-depth]
+  [Link 2] ...
+  → Overall conclusion
+
+If the conclusion is "no change": state it plainly and cite the evidence.
+Label the overall conclusion: WELL-GROUNDED (fully-read sources) /
+TENTATIVE (snippet-only) / THIN (paywalled / unread sources only).
+
 ## WATCHLIST — CANDIDATE ROTATION DESTINATIONS
 For each candidate that survived rejection:
 
@@ -269,7 +362,7 @@ monthly scans before drawing conclusions. Nothing here is investment advice.
 """.strip()
 
 # ---------------------------------------------------------------------------
-# Tool definition (shared with derivative_analysis pattern)
+# Tool definitions
 # ---------------------------------------------------------------------------
 TOOLS = [
     {
@@ -292,7 +385,28 @@ TOOLS = [
             },
             "required": ["query"],
         },
-    }
+    },
+    {
+        "name": "web_fetch",
+        "description": (
+            "Fetch the FULL text content of a specific URL identified as signal-rich "
+            "during the search phase. Use this for Stage 5 (Selective Deep Read) only — "
+            "call it on the 5–10 most valuable URLs from your search results. "
+            "Do NOT use it to browse broadly; use tavily_search for discovery. "
+            "Returns the page text (truncated to ~4000 chars) or an error string "
+            "indicating the page is paywalled / unfetchable."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string",
+                    "description": "The exact URL to fetch.",
+                }
+            },
+            "required": ["url"],
+        },
+    },
 ]
 
 # ---------------------------------------------------------------------------
@@ -313,21 +427,79 @@ def _tavily_search(query: str) -> str:
         return f"Search failed: {e}"
 
 
+class _TextExtractor(HTMLParser):
+    """Minimal HTML-to-text stripper using stdlib only."""
+    def __init__(self):
+        super().__init__()
+        self._parts = []
+        self._skip  = False
+
+    def handle_starttag(self, tag, attrs):
+        if tag in ("script", "style", "nav", "footer", "header"):
+            self._skip = True
+
+    def handle_endtag(self, tag):
+        if tag in ("script", "style", "nav", "footer", "header"):
+            self._skip = False
+        if tag in ("p", "div", "li", "h1", "h2", "h3", "h4", "br"):
+            self._parts.append("\n")
+
+    def handle_data(self, data):
+        if not self._skip:
+            self._parts.append(data)
+
+    def get_text(self) -> str:
+        raw = "".join(self._parts)
+        # Collapse runs of whitespace / blank lines
+        return re.sub(r"\n{3,}", "\n\n", re.sub(r"[ \t]+", " ", raw)).strip()
+
+
+def _web_fetch(url: str, max_chars: int = 4000) -> str:
+    """
+    Fetch a URL and return its text content.
+    Returns an error string (never raises) so the model can label the source
+    as 'referenced, not readable' and move on.
+    """
+    try:
+        resp = requests.get(
+            url,
+            timeout=15,
+            headers={"User-Agent": "RegimeRadar/1.0 (research tool)"},
+            allow_redirects=True,
+        )
+        if resp.status_code in (401, 402, 403):
+            return f"PAYWALL_OR_BLOCKED: HTTP {resp.status_code} — mark as [referenced, not readable]"
+        if resp.status_code != 200:
+            return f"FETCH_FAILED: HTTP {resp.status_code} — mark as [referenced, not readable]"
+        content_type = resp.headers.get("content-type", "")
+        if "html" not in content_type and "text" not in content_type:
+            return f"NON_TEXT: content-type '{content_type}' — mark as [referenced, not readable]"
+        extractor = _TextExtractor()
+        extractor.feed(resp.text)
+        text = extractor.get_text()
+        if len(text) < 100:
+            return "FETCH_FAILED: page returned too little text — mark as [referenced, not readable]"
+        return text[:max_chars] + (f"\n\n[... truncated at {max_chars} chars]" if len(text) > max_chars else "")
+    except Exception as e:
+        return f"FETCH_FAILED: {e} — mark as [referenced, not readable]"
+
+
 # ---------------------------------------------------------------------------
 # Agentic loop
 # ---------------------------------------------------------------------------
 
-def _agentic_loop(system: str, user_message: str, model: str, on_search=None) -> str:
+def _agentic_loop(system: str, user_message: str, model: str, on_step=None) -> str:
     """
-    on_search: optional callable(query: str, result_preview: str) called
-               each time a Tavily search fires, so callers can show progress.
+    on_step: optional callable(kind: str, detail: str) called on each tool use.
+             kind is 'search' (Tavily) or 'fetch' (web_fetch).
+             detail is the query or URL.
     """
     messages = [{"role": "user", "content": user_message}]
 
     while True:
         response = _claude.messages.create(
             model=model,
-            max_tokens=8000,   # radar output is long; allocator sub-sections add length
+            max_tokens=8000,
             system=system,
             tools=TOOLS,
             messages=messages,
@@ -348,9 +520,13 @@ def _agentic_loop(system: str, user_message: str, model: str, on_search=None) ->
             if block.name == "tavily_search":
                 query  = block.input["query"]
                 result = _tavily_search(query)
-                if on_search:
-                    preview = result[:200].replace("\n", " ") if result else "no results"
-                    on_search(query, preview)
+                if on_step:
+                    on_step("search", query)
+            elif block.name == "web_fetch":
+                url    = block.input["url"]
+                result = _web_fetch(url)
+                if on_step:
+                    on_step("fetch", url)
             else:
                 result = f"Unknown tool: {block.name}"
             tool_results.append({
@@ -366,26 +542,35 @@ def _agentic_loop(system: str, user_message: str, model: str, on_search=None) ->
 # Public API
 # ---------------------------------------------------------------------------
 
-def run_regime_radar(model: str = "claude-haiku-4-5-20251001", on_search=None) -> str:
+def run_regime_radar(model: str = "claude-haiku-4-5-20251001", on_step=None) -> str:
     """
     Run a monthly capital-rotation regime scan.
-    Works through four signal types in order, searches before concluding,
-    and returns a formatted markdown watchlist.
 
-    on_search: optional callable(query, result_preview) for live progress reporting.
+    Seven stages: signal gathering (1–4) + selective deep read (5) +
+    synthesis (6) + explanatory "why" conclusion (7).
+
+    on_step: optional callable(kind: str, detail: str) for live progress.
+             kind='search' → Tavily query; kind='fetch' → URL being read.
     """
     user_message = (
-        "Run the monthly regime radar scan. Work through all four signal types "
-        "in order — Policy/Government, Fund Formation, Exhaustion in the Current "
-        "Trade, Commentator Attention Drift — running current-dated Tavily searches "
-        "for each before drawing any conclusions. Then synthesise the watchlist. "
-        "The current date is 2026; all searches must include 2026 or a current "
-        "quarter signal. Be reject-happy: 'No credible rotation signal' is the "
-        "expected and valued outcome for most scans."
+        "Run the monthly regime radar scan. "
+        "Stage 1–4: work through all signal types in order — "
+        "Policy/Government, Fund Formation (institutional + allocators), "
+        "Exhaustion in the Current Trade, Commentator Attention Drift — "
+        "running current-dated Tavily searches for each. "
+        "Stage 5: identify the 5–10 most signal-rich URLs from your searches "
+        "and web_fetch each one for the full text; tag every source with its "
+        "read-depth ([fully read] / [snippet only] / [referenced, not readable]). "
+        "Stage 6: synthesise causally across all gathered material, citing "
+        "source and read-depth for every claim. "
+        "Stage 7: produce the 'Why there has (or has not) been a change' section "
+        "— link-by-link reasoning, confidence-rated, read-depth honest. "
+        "The current date is 2026. Be reject-happy: a well-evidenced null result "
+        "is a first-class output."
     )
     return _agentic_loop(
         system=REGIME_RADAR_SYSTEM_PROMPT,
         user_message=user_message,
         model=model,
-        on_search=on_search,
+        on_step=on_step,
     )

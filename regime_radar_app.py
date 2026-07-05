@@ -138,15 +138,22 @@ if run_scan:
     result = ""
     try:
         with st.status("Running regime radar scan…", expanded=True) as status:
-            search_count = [0]
+            counts = {"search": 0, "fetch": 0}
 
-            def on_search(query: str, preview: str) -> None:
-                search_count[0] += 1
-                st.write(f"🔍 **Search {search_count[0]}:** {query}")
+            def on_step(kind: str, detail: str) -> None:
+                if kind == "search":
+                    counts["search"] += 1
+                    st.write(f"🔍 **Search {counts['search']}:** {detail}")
+                elif kind == "fetch":
+                    counts["fetch"] += 1
+                    st.write(f"📄 **Reading {counts['fetch']}:** {detail}")
 
-            result = run_regime_radar(model=selected_model, on_search=on_search)
+            result = run_regime_radar(model=selected_model, on_step=on_step)
             status.update(
-                label=f"Scan complete — {search_count[0]} searches ran.",
+                label=(
+                    f"Scan complete — {counts['search']} searches, "
+                    f"{counts['fetch']} sources read in full."
+                ),
                 state="complete",
                 expanded=False,
             )

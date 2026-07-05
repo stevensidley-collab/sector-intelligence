@@ -42,10 +42,20 @@ def _append_to_archive(tab: str, trend: str, result: str, model: str) -> None:
 
 
 def _load_archive_for_tab(tab: str) -> list[dict]:
-    """Return all archived runs for this tab, newest first."""
+    """
+    Return all runs for this tab as paired entries (second + third order),
+    newest first.
+
+    On disk each run is stored as two consecutive records:
+      1. The second-order result (trend = bare trend string)
+      2. The third-order result (trend = "[THIRD ORDER] ..." prefix)
+    We re-pair them here so history entries have both result and t3_result.
+    Legacy single-record entries (no third-order partner) are kept as-is.
+    """
     if not _ARCHIVE_FILE.exists():
         return []
-    records = []
+
+    raw = []
     with _ARCHIVE_FILE.open(encoding="utf-8") as f:
         for line in f:
             line = line.strip()
@@ -54,10 +64,39 @@ def _load_archive_for_tab(tab: str) -> list[dict]:
             try:
                 rec = json.loads(line)
                 if rec.get("tab") == tab:
-                    records.append(rec)
+                    raw.append(rec)
             except json.JSONDecodeError:
                 pass
-    return list(reversed(records))  # newest first
+
+    # Pair consecutive second + third records
+    paired: list[dict] = []
+    i = 0
+    while i < len(raw):
+        rec = raw[i]
+        if rec["trend"].startswith("[THIRD ORDER]"):
+            i += 1
+            continue  # orphan third-order record — skip
+        # Look ahead for a matching third-order record
+        if i + 1 < len(raw) and raw[i + 1]["trend"].startswith("[THIRD ORDER]"):
+            paired.append({
+                "trend":     rec["trend"],
+                "result":    rec["result"],
+                "t3_result": raw[i + 1]["result"],
+                "model":     rec.get("model", ""),
+                "timestamp": rec.get("timestamp", ""),
+            })
+            i += 2
+        else:
+            paired.append({
+                "trend":     rec["trend"],
+                "result":    rec["result"],
+                "t3_result": None,
+                "model":     rec.get("model", ""),
+                "timestamp": rec.get("timestamp", ""),
+            })
+            i += 1
+
+    return list(reversed(paired))  # newest first
 
 st.set_page_config(
     page_title="Sector Intelligence",
@@ -108,6 +147,11 @@ def _render(text: str) -> str:
 def analysis_tab(key: str, suggested: list[str], model: str = "claude-haiku-4-5-20251001") -> None:
     """
     Render a trend selector + run button for one domain tab.
+
+    Each run executes second-order analysis immediately followed by an automatic
+    third-order upstream pass. Both results are stored together in session state
+    and on disk, so they survive page interactions and app restarts.
+
     key        — unique string to namespace Streamlit widget keys
     suggested  — list of pre-written trend strings for the domain
     """
@@ -139,96 +183,61 @@ def analysis_tab(key: str, suggested: list[str], model: str = "claude-haiku-4-5-
                     disabled=not trend.strip())
 
     if run and trend.strip():
-        with st.spinner("Searching and reasoning through the value chain…"):
+        # --- Second-order pass ---
+        with st.spinner("Stage 1 of 2 — tracing the value chain (second-order)…"):
             result = run_derivative_analysis(trend.strip(), model=model)
 
-        # Persist to disk, then prepend to in-session history
-        _append_to_archive(key, trend.strip(), result, model)
-        st.session_state[hist_key].insert(0, {
+        # --- Third-order pass — automatic, model self-applies all gates ---
+        with st.spinner("Stage 2 of 2 — walking upstream (third-order)…"):
+            t3_result = run_third_order_analysis(
+                second_order_verdict=result,
+                trend=trend.strip(),
+                model=model,
+            )
+
+        entry = {
             "trend":     trend.strip(),
             "result":    result,
+            "t3_result": t3_result,
             "model":     model,
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
-        })
-
-        st.markdown(_render(result), unsafe_allow_html=True)
+        }
+        _append_to_archive(key, trend.strip(), result, model)
+        _append_to_archive(key, f"[THIRD ORDER] {trend.strip()}", t3_result, model)
+        st.session_state[hist_key].insert(0, entry)
 
     elif not trend.strip():
         st.info("Select or enter a trend above and click **Run analysis**.")
 
-    # --- Third-order panel (shown only when at least one run exists) -------
+    # --- Always render most-recent result from session state ---------------
+    # (never render from a local variable — that disappears on rerender)
     history = st.session_state[hist_key]
     if history:
-        with st.expander("🔍 Go third order on a second-order beneficiary", expanded=False):
-            st.caption(
-                "Walk one rung upstream from a named bottleneck-holder. "
-                "**Only valid when the second-order link beneath it was rated STRONG.** "
-                "Moderate or weak links compound uncertainty — the tool will refuse them."
-            )
-
-            # Let the user pick which prior run to draw context from
-            run_labels = [
-                f"{e['timestamp']} — {e['trend'][:60]}{'…' if len(e['trend']) > 60 else ''}"
-                for e in history
-            ]
-            chosen_idx = st.selectbox(
-                "Base second-order run",
-                range(len(run_labels)),
-                format_func=lambda i: run_labels[i],
-                key=f"{key}_t3_run_select",
-            )
-            chosen_entry = history[chosen_idx]
-
-            beneficiary_input = st.text_input(
-                "Beneficiary to analyse upstream (e.g. 'Ajinomoto / ABF substrates')",
-                key=f"{key}_t3_beneficiary",
-                placeholder="Company name / product position",
-            )
-
-            verdict_confirmed = st.checkbox(
-                "I confirm the second-order link for this beneficiary was rated **STRONG** "
-                "in the analysis above. (Do not tick if the verdict was Moderate, Weak, or Speculative.)",
-                key=f"{key}_t3_confirmed",
-            )
-
-            run_t3 = st.button(
-                "Run third-order analysis",
-                key=f"{key}_t3_run",
-                disabled=not (beneficiary_input.strip() and verdict_confirmed),
-            )
-
-            if run_t3 and beneficiary_input.strip() and verdict_confirmed:
-                with st.spinner("Walking upstream — searching for third-order constraints…"):
-                    t3_result = run_third_order_analysis(
-                        beneficiary=beneficiary_input.strip(),
-                        second_order_verdict=chosen_entry["result"],
-                        trend=chosen_entry["trend"],
-                        model=selected_model,
-                    )
-                _append_to_archive(
-                    tab=key,
-                    trend=f"[THIRD ORDER: {beneficiary_input.strip()}] {chosen_entry['trend']}",
-                    result=t3_result,
-                    model=selected_model,
-                )
-                st.session_state[hist_key].insert(0, {
-                    "trend":     f"[THIRD ORDER: {beneficiary_input.strip()}] {chosen_entry['trend']}",
-                    "result":    t3_result,
-                    "model":     selected_model,
-                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                })
-                st.markdown(_render(t3_result), unsafe_allow_html=True)
-
-    # --- History -----------------------------------------------------------
-    history = st.session_state[hist_key]  # refresh after any third-order insert
-    if history:
+        latest = history[0]
         st.divider()
-        st.subheader(f"History ({len(history)} run{'s' if len(history) != 1 else ''})")
-        for i, entry in enumerate(history):
-            model_tag = f" · {entry.get('model', '').split('-')[1] if entry.get('model') else ''}"
-            label = f"**{entry['timestamp']}**{model_tag} — {entry['trend'][:80]}{'…' if len(entry['trend']) > 80 else ''}"
-            with st.expander(label, expanded=(i == 0 and not run)):
+        st.subheader("Second-order analysis")
+        st.markdown(_render(latest["result"]), unsafe_allow_html=True)
+        st.divider()
+        st.subheader("Third-order upstream pass")
+        st.markdown(_render(latest.get("t3_result", "_Not available for this run._")), unsafe_allow_html=True)
+
+    # --- History (prior runs, collapsed) -----------------------------------
+    if len(history) > 1:
+        st.divider()
+        st.subheader(f"Prior runs ({len(history) - 1})")
+        for i, entry in enumerate(history[1:], start=1):
+            model_tag = entry.get("model", "").split("-")[1] if entry.get("model") else ""
+            label = (
+                f"**{entry['timestamp']}** · {model_tag} — "
+                f"{entry['trend'][:80]}{'…' if len(entry['trend']) > 80 else ''}"
+            )
+            with st.expander(label, expanded=False):
+                st.markdown("**Second-order**")
                 st.markdown(_render(entry["result"]), unsafe_allow_html=True)
+                if entry.get("t3_result"):
+                    st.markdown("---")
+                    st.markdown("**Third-order**")
+                    st.markdown(_render(entry["t3_result"]), unsafe_allow_html=True)
 
 
 # ---------------------------------------------------------------------------

@@ -387,27 +387,41 @@ def run_derivative_analysis(trend: str, model: str = "claude-haiku-4-5-20251001"
 
 
 def run_third_order_analysis(
-    beneficiary: str,
     second_order_verdict: str,
     trend: str,
     model: str = "claude-haiku-4-5-20251001",
+    beneficiary: str | None = None,
 ) -> str:
     """
-    Third-order upstream pass on a named second-order beneficiary.
+    Third-order upstream pass.
 
-    The caller is responsible for the PRECONDITION gate: this function must only
-    be called when the underlying second-order chain was rated STRONG. If the
-    verdict is moderate or weak, the UI should refuse before calling here.
+    If beneficiary is provided, analyse that specific company/position.
+    If omitted, identify the single strongest Compelling-rated beneficiary
+    from second_order_verdict automatically and apply the gates to it.
+    If no Compelling beneficiary exists, the model will state this and stop.
 
-    beneficiary           — e.g. "Ajinomoto (ABF substrates)"
-    second_order_verdict  — the full second-order chain text, injected as context
+    second_order_verdict  — full text of the second-order analysis
     trend                 — the original demand trend
+    beneficiary           — optional; if None, model auto-identifies from context
     """
+    if beneficiary:
+        target_instruction = (
+            f"Second-order beneficiary to analyse upstream: {beneficiary}"
+        )
+    else:
+        target_instruction = (
+            "From the second-order analysis below, identify the single strongest "
+            "beneficiary rated COMPELLING. Apply the full third-order gate process "
+            "to that beneficiary. If no beneficiary was rated Compelling, state "
+            "\"No Compelling second-order beneficiary identified — third-order "
+            "analysis not applicable.\" and stop."
+        )
+
     user_message = (
         f"Original demand trend: {trend}\n\n"
-        f"Second-order beneficiary to analyse upstream: {beneficiary}\n\n"
-        f"Second-order analysis context (for reference — do not re-derive, "
-        f"just use the chain and verdict already established):\n\n"
+        f"{target_instruction}\n\n"
+        f"Second-order analysis (do not re-derive — use the chain and verdict "
+        f"already established):\n\n"
         f"{second_order_verdict}"
     )
     return _agentic_loop(

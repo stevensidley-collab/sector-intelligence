@@ -304,3 +304,4 @@ with tab_quantum:
         "Quantum hardware scale-up driving demand for specialised microwave components and cryogenic electronics",
         "Government quantum investment programmes driving demand for trapped-ion and superconducting qubit foundry capacity",
     ], model=selected_model)
+

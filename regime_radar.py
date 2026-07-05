@@ -26,6 +26,11 @@ load_dotenv()
 ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
 TAVILY_API_KEY    = os.environ["TAVILY_API_KEY"]
 
+MODELS = {
+    "Haiku (faster, cheaper)": "claude-haiku-4-5-20251001",
+    "Sonnet (slower, sharper)": "claude-sonnet-4-6",
+}
+
 _claude = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 _tavily = TavilyClient(api_key=TAVILY_API_KEY)
 

@@ -219,7 +219,7 @@ def analysis_tab(key: str, suggested: list[str], model: str = "claude-haiku-4-5-
         st.markdown(_render(latest["result"]), unsafe_allow_html=True)
         st.divider()
         st.subheader("Third-order upstream pass")
-        st.markdown(_render(latest.get("t3_result", "_Not available for this run._")), unsafe_allow_html=True)
+        st.markdown(_render(latest.get("t3_result") or "_Not available for this run._"), unsafe_allow_html=True)
 
     # --- History (prior runs, collapsed) -----------------------------------
     if len(history) > 1:

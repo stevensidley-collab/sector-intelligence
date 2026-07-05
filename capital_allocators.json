@@ -1,0 +1,10 @@
+[
+  { "name": "Andreessen Horowitz (a16z)", "type": "VC", "signal": "fund-formation + published-thesis", "focus": "AI, crypto, bio, defense, American dynamism", "active": true },
+  { "name": "Sequoia Capital",            "type": "VC", "signal": "fund-formation + published-thesis", "focus": "broad tech, AI",                              "active": true },
+  { "name": "SoftBank / Vision Fund",     "type": "VC", "signal": "fund-formation",                    "focus": "AI, infrastructure, late-stage megabets",     "active": true },
+  { "name": "Thrive Capital",             "type": "VC", "signal": "fund-formation",                    "focus": "AI, frontier",                                "active": true },
+  { "name": "Founders Fund",              "type": "VC", "signal": "fund-formation + published-thesis", "focus": "defense, deep tech, frontier",                "active": true },
+  { "name": "General Catalyst",           "type": "VC", "signal": "fund-formation",                    "focus": "AI, health, defense",                         "active": true },
+  { "name": "Lightspeed",                 "type": "VC", "signal": "fund-formation",                    "focus": "AI, enterprise, crypto",                      "active": true },
+  { "name": "Khosla Ventures",            "type": "VC", "signal": "fund-formation + published-thesis", "focus": "deep tech, AI, energy, nuclear",              "active": true }
+]

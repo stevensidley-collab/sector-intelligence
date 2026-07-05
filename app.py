@@ -19,7 +19,7 @@ from pathlib import Path
 
 import streamlit as st
 
-from derivative_analysis import MODELS, run_derivative_analysis
+from derivative_analysis import MODELS, run_derivative_analysis, run_third_order_analysis
 
 # ---------------------------------------------------------------------------
 # Persistent archive — one JSON record per line in outputs/archive.jsonl
@@ -156,8 +156,71 @@ def analysis_tab(key: str, suggested: list[str], model: str = "claude-haiku-4-5-
     elif not trend.strip():
         st.info("Select or enter a trend above and click **Run analysis**.")
 
-    # --- History -----------------------------------------------------------
+    # --- Third-order panel (shown only when at least one run exists) -------
     history = st.session_state[hist_key]
+    if history:
+        with st.expander("🔍 Go third order on a second-order beneficiary", expanded=False):
+            st.caption(
+                "Walk one rung upstream from a named bottleneck-holder. "
+                "**Only valid when the second-order link beneath it was rated STRONG.** "
+                "Moderate or weak links compound uncertainty — the tool will refuse them."
+            )
+
+            # Let the user pick which prior run to draw context from
+            run_labels = [
+                f"{e['timestamp']} — {e['trend'][:60]}{'…' if len(e['trend']) > 60 else ''}"
+                for e in history
+            ]
+            chosen_idx = st.selectbox(
+                "Base second-order run",
+                range(len(run_labels)),
+                format_func=lambda i: run_labels[i],
+                key=f"{key}_t3_run_select",
+            )
+            chosen_entry = history[chosen_idx]
+
+            beneficiary_input = st.text_input(
+                "Beneficiary to analyse upstream (e.g. 'Ajinomoto / ABF substrates')",
+                key=f"{key}_t3_beneficiary",
+                placeholder="Company name / product position",
+            )
+
+            verdict_confirmed = st.checkbox(
+                "I confirm the second-order link for this beneficiary was rated **STRONG** "
+                "in the analysis above. (Do not tick if the verdict was Moderate, Weak, or Speculative.)",
+                key=f"{key}_t3_confirmed",
+            )
+
+            run_t3 = st.button(
+                "Run third-order analysis",
+                key=f"{key}_t3_run",
+                disabled=not (beneficiary_input.strip() and verdict_confirmed),
+            )
+
+            if run_t3 and beneficiary_input.strip() and verdict_confirmed:
+                with st.spinner("Walking upstream — searching for third-order constraints…"):
+                    t3_result = run_third_order_analysis(
+                        beneficiary=beneficiary_input.strip(),
+                        second_order_verdict=chosen_entry["result"],
+                        trend=chosen_entry["trend"],
+                        model=selected_model,
+                    )
+                _append_to_archive(
+                    tab=key,
+                    trend=f"[THIRD ORDER: {beneficiary_input.strip()}] {chosen_entry['trend']}",
+                    result=t3_result,
+                    model=selected_model,
+                )
+                st.session_state[hist_key].insert(0, {
+                    "trend":     f"[THIRD ORDER: {beneficiary_input.strip()}] {chosen_entry['trend']}",
+                    "result":    t3_result,
+                    "model":     selected_model,
+                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                })
+                st.markdown(_render(t3_result), unsafe_allow_html=True)
+
+    # --- History -----------------------------------------------------------
+    history = st.session_state[hist_key]  # refresh after any third-order insert
     if history:
         st.divider()
         st.subheader(f"History ({len(history)} run{'s' if len(history) != 1 else ''})")

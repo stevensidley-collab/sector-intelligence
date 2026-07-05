@@ -1,12 +1,16 @@
 """
-Second-derivative supply-chain analysis.
+Second-derivative supply-chain analysis, with optional third-order upstream pass.
 
-Given a demand trend, traces the value chain to identify genuine bottlenecks —
-concentrated, hard-to-substitute chokepoints with pricing power — and names the
-companies sitting on them. Verification searches are required before asserting
-any bottleneck or beneficiary; citations are embedded in the output.
+run_derivative_analysis(trend, model)
+    Traces a demand trend downstream to identify genuine second-order bottlenecks.
 
-Output is an inspectable hypothesis, NOT a recommendation.
+run_third_order_analysis(beneficiary, second_order_verdict, trend, model)
+    Walks ONE rung upstream from a named second-order beneficiary to ask whether
+    the constraint continues into its own supply chain. Only meaningful when the
+    underlying second-order link is rated STRONG — call sites must enforce this.
+
+Both functions use the same Tavily tool and agentic loop. Output is inspectable
+hypothesis text, NOT a recommendation.
 """
 
 import json
@@ -190,6 +194,124 @@ TOOLS = [
 ]
 
 # ---------------------------------------------------------------------------
+# Third-order system prompt
+# ---------------------------------------------------------------------------
+THIRD_ORDER_SYSTEM_PROMPT = """
+You are a third-order supply-chain analyst. The current date is 2026.
+You have been given a second-order beneficiary — a company that sits on a
+genuine, rated-STRONG supply bottleneck created by a demand trend. Your sole
+job is to walk ONE rung upstream: what specific inputs, materials, chemistries,
+or equipment does this beneficiary depend on to hold its bottleneck position?
+And are any of those inputs themselves constrained?
+
+You are capped at third order. Do not walk to fourth or fifth, even if a
+constraint appears to continue. State explicitly when you stop.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CARDINAL RULE — DISCOVERY BEFORE CONCLUSION (STRICTER HERE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Third-order supplier relationships are thinly documented. Your training data
+is especially unreliable here. You MUST search before naming any upstream
+supplier or input. Do not recall a supplier name from memory and then search
+to confirm it. Search first to discover who actually supplies the input today.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SEARCH QUERY RULES (same as second-order tool)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ GOOD queries:
+   "who supplies [specific input] to [beneficiary] 2026"
+   "suppliers of [material/chemistry] for [process] latest 2026"
+   "[input] supply concentration market share current 2026"
+   "[beneficiary] raw material sourcing upstream 2025 2026"
+
+❌ FORBIDDEN queries:
+   Any query that restates a known supplier relationship from memory.
+   Queries without a year or freshness signal.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GATES — APPLY IN ORDER. REJECT LIBERALLY.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+GATE 1 — PROPAGATION: Does the constraint actually continue upstream?
+Default answer is NO. Most upstream inputs are commodities with multiple
+suppliers and fast supply response. Only proceed to Gate 2 if you find
+current-source evidence of:
+  • Concentrated supply (few producers, high market share)
+  • Low substitutability (process-locked, qualified-supplier lists)
+  • Slow capacity expansion (long capex cycles, regulatory barriers)
+  • Demonstrated pricing power
+If the input fails Gate 1, output: "Constraint stops here — upstream input
+is [commodity/abundant/diversely sourced]. No third-order candidate."
+
+GATE 2 — MATERIALITY: Is the original trend a meaningful share of the
+upstream supplier's business?
+A true supplier relationship that represents <5% of the upstream company's
+revenue does not create meaningful exposure to the trend. Estimate the
+share from search results. If immaterial, output: "True but immaterial —
+[trend] exposure is a small fraction of [supplier]'s revenue. Rejected."
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFICATION HONESTY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Third-order facts are often buried or non-public. Label every claim you
+cannot ground in a current source:
+  "⚠️ Unverified — reasoned inference, not confirmed by current source."
+Do NOT fill gaps with plausible-sounding supplier relationships. If the
+ground is thin, say so. A thin-ground rejection is more valuable than a
+confident confabulation.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT FORMAT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+---
+## THIRD-ORDER ANALYSIS: [Beneficiary]
+
+**Full chain under examination:**
+[Trend] → [second-order bottleneck] → **[Beneficiary]** → [upstream input(s)]
+
+## UPSTREAM INPUTS IDENTIFIED
+List each specific input/material/equipment the beneficiary depends on.
+For each, cite the search(es) used to identify it.
+
+## GATE 1 — PROPAGATION ASSESSMENT
+For each input: does the constraint continue? State STOPS or CONTINUES with
+one-line sourced reasoning. Default is STOPS.
+
+## GATE 2 — MATERIALITY ASSESSMENT
+For any input that passed Gate 1: is trend exposure a meaningful share of
+the upstream supplier's business? State MATERIAL or IMMATERIAL with
+reasoning. Reject if immaterial.
+
+## SURVIVING CANDIDATES
+For each input passing both gates, output one block:
+
+### Third-Order Candidate: [Supplier / Input]
+**Full chain:** [Trend] → [2nd-order bottleneck] → [Beneficiary] → [this input/supplier]
+**Why constraint continues (Gate 1):** [sourced, dated]
+**Materiality (Gate 2):** [estimate + source]
+**Link-by-link strength:**
+- 2nd-order link (carried forward): [STRONG — confirmed from second-order analysis]
+- Beneficiary → upstream input: [strong / moderate / weak] — [reason + source date]
+- Upstream input → named supplier: [strong / moderate / weak] — [reason + source date]
+**Supplier(s):** [Names with tickers if public. ⚠️ outside tracked set — unverified if applicable.]
+**Verification status:** [What is confirmed vs. inferred]
+**Verdict:** [Compelling / Moderate / Weak / Speculative]
+
+## REJECTED CANDIDATES
+One line each: input name — gate that rejected it — reason.
+
+## OVERALL VERDICT
+"Constraint stops here" is the expected and valued outcome for most targets.
+State clearly whether any third-order play survived both gates, and how
+confident you are given the quality of sources found.
+
+---
+⚠️ Analysis capped at third order. These are hypotheses for the user's own
+judgment. Nothing here is a recommendation to buy or sell any security.
+""".strip()
+
+# ---------------------------------------------------------------------------
 # Tool execution
 # ---------------------------------------------------------------------------
 
@@ -208,23 +330,18 @@ def _tavily_search(query: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Agentic loop
+# Shared agentic loop
 # ---------------------------------------------------------------------------
 
-def run_derivative_analysis(trend: str, model: str = "claude-haiku-4-5-20251001") -> str:
-    """
-    Run the 3-stage second-derivative analysis for the given trend.
-    Claude drives the reasoning; Tavily is called whenever Claude needs
-    to verify a factual claim about a bottleneck or beneficiary.
-    Returns formatted markdown text.
-    """
-    messages = [{"role": "user", "content": f"Analyse this trend: {trend}"}]
+def _agentic_loop(system: str, user_message: str, model: str) -> str:
+    """Drive the Claude ↔ Tavily loop for any system prompt and opening message."""
+    messages = [{"role": "user", "content": user_message}]
 
     while True:
         response = _claude.messages.create(
             model=model,
             max_tokens=4096,
-            system=SYSTEM_PROMPT,
+            system=system,
             tools=TOOLS,
             messages=messages,
         )
@@ -237,7 +354,6 @@ def run_derivative_analysis(trend: str, model: str = "claude-haiku-4-5-20251001"
                     return block.text
             return ""
 
-        # Execute tool calls and feed results back
         tool_results = []
         for block in response.content:
             if block.type != "tool_use":
@@ -255,3 +371,47 @@ def run_derivative_analysis(trend: str, model: str = "claude-haiku-4-5-20251001"
             )
 
         messages.append({"role": "user", "content": tool_results})
+
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
+
+def run_derivative_analysis(trend: str, model: str = "claude-haiku-4-5-20251001") -> str:
+    """Second-order analysis: trace a demand trend to supply bottlenecks."""
+    return _agentic_loop(
+        system=SYSTEM_PROMPT,
+        user_message=f"Analyse this trend: {trend}",
+        model=model,
+    )
+
+
+def run_third_order_analysis(
+    beneficiary: str,
+    second_order_verdict: str,
+    trend: str,
+    model: str = "claude-haiku-4-5-20251001",
+) -> str:
+    """
+    Third-order upstream pass on a named second-order beneficiary.
+
+    The caller is responsible for the PRECONDITION gate: this function must only
+    be called when the underlying second-order chain was rated STRONG. If the
+    verdict is moderate or weak, the UI should refuse before calling here.
+
+    beneficiary           — e.g. "Ajinomoto (ABF substrates)"
+    second_order_verdict  — the full second-order chain text, injected as context
+    trend                 — the original demand trend
+    """
+    user_message = (
+        f"Original demand trend: {trend}\n\n"
+        f"Second-order beneficiary to analyse upstream: {beneficiary}\n\n"
+        f"Second-order analysis context (for reference — do not re-derive, "
+        f"just use the chain and verdict already established):\n\n"
+        f"{second_order_verdict}"
+    )
+    return _agentic_loop(
+        system=THIRD_ORDER_SYSTEM_PROMPT,
+        user_message=user_message,
+        model=model,
+    )

@@ -213,10 +213,17 @@ def analysis_tab(key: str, suggested: list[str], model: str = "claude-haiku-4-5-
     elif not trend.strip():
         st.info("Select or enter a trend above and click **Run analysis**.")
 
-    # --- Always render most-recent result from session state ---------------
-    # (never render from a local variable — that disappears on rerender)
+    # --- Show output only when this session has produced a run -------------
+    # On startup (history loaded from archive) we show nothing until the user
+    # explicitly clicks Run — so the app doesn't look like it just ran something.
     history = st.session_state[hist_key]
-    if history:
+    ran_this_session = st.session_state.get(f"{key}_ran_this_session", False)
+
+    if run and trend.strip():
+        st.session_state[f"{key}_ran_this_session"] = True
+        ran_this_session = True
+
+    if ran_this_session and history:
         latest = history[0]
         st.divider()
         st.subheader("Second-order analysis")
@@ -231,10 +238,11 @@ def analysis_tab(key: str, suggested: list[str], model: str = "claude-haiku-4-5-
             )
 
     # --- History (prior runs, collapsed) -----------------------------------
-    if len(history) > 1:
+    if len(history) > 1 or (not ran_this_session and history):
         st.divider()
-        st.subheader(f"Prior runs ({len(history) - 1})")
-        for i, entry in enumerate(history[1:], start=1):
+        prior = history if not ran_this_session else history[1:]
+        st.subheader(f"Prior runs ({len(prior)})")
+        for i, entry in enumerate(prior, start=1):
             model_tag = entry.get("model", "").split("-")[1] if entry.get("model") else ""
             label = (
                 f"**{entry['timestamp']}** · {model_tag} — "

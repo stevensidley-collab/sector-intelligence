@@ -137,11 +137,19 @@ with col_note:
 if run_scan:
     result = ""
     try:
-        with st.spinner(
-            "Scanning policy commitments, fund formation, current-trade exhaustion, "
-            "and commentator + allocator drift…"
-        ):
-            result = run_regime_radar(model=selected_model)
+        with st.status("Running regime radar scan…", expanded=True) as status:
+            search_count = [0]
+
+            def on_search(query: str, preview: str) -> None:
+                search_count[0] += 1
+                st.write(f"🔍 **Search {search_count[0]}:** {query}")
+
+            result = run_regime_radar(model=selected_model, on_search=on_search)
+            status.update(
+                label=f"Scan complete — {search_count[0]} searches ran.",
+                state="complete",
+                expanded=False,
+            )
     except Exception as e:
         result = f"⚠️ Radar scan failed: {e}"
 

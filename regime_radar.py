@@ -317,7 +317,11 @@ def _tavily_search(query: str) -> str:
 # Agentic loop
 # ---------------------------------------------------------------------------
 
-def _agentic_loop(system: str, user_message: str, model: str) -> str:
+def _agentic_loop(system: str, user_message: str, model: str, on_search=None) -> str:
+    """
+    on_search: optional callable(query: str, result_preview: str) called
+               each time a Tavily search fires, so callers can show progress.
+    """
     messages = [{"role": "user", "content": user_message}]
 
     while True:
@@ -341,7 +345,14 @@ def _agentic_loop(system: str, user_message: str, model: str) -> str:
         for block in response.content:
             if block.type != "tool_use":
                 continue
-            result = _tavily_search(block.input["query"]) if block.name == "tavily_search" else f"Unknown tool: {block.name}"
+            if block.name == "tavily_search":
+                query  = block.input["query"]
+                result = _tavily_search(query)
+                if on_search:
+                    preview = result[:200].replace("\n", " ") if result else "no results"
+                    on_search(query, preview)
+            else:
+                result = f"Unknown tool: {block.name}"
             tool_results.append({
                 "type":        "tool_result",
                 "tool_use_id": block.id,
@@ -355,11 +366,13 @@ def _agentic_loop(system: str, user_message: str, model: str) -> str:
 # Public API
 # ---------------------------------------------------------------------------
 
-def run_regime_radar(model: str = "claude-haiku-4-5-20251001") -> str:
+def run_regime_radar(model: str = "claude-haiku-4-5-20251001", on_search=None) -> str:
     """
     Run a monthly capital-rotation regime scan.
     Works through four signal types in order, searches before concluding,
     and returns a formatted markdown watchlist.
+
+    on_search: optional callable(query, result_preview) for live progress reporting.
     """
     user_message = (
         "Run the monthly regime radar scan. Work through all four signal types "
@@ -374,4 +387,5 @@ def run_regime_radar(model: str = "claude-haiku-4-5-20251001") -> str:
         system=REGIME_RADAR_SYSTEM_PROMPT,
         user_message=user_message,
         model=model,
+        on_search=on_search,
     )

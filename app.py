@@ -188,17 +188,21 @@ def analysis_tab(key: str, suggested: list[str], model: str = "claude-haiku-4-5-
             result = run_derivative_analysis(trend.strip(), model=model)
 
         # --- Third-order pass — automatic, model self-applies all gates ---
-        with st.spinner("Stage 2 of 2 — walking upstream (third-order)…"):
-            t3_result = run_third_order_analysis(
-                second_order_verdict=result,
-                trend=trend.strip(),
-                model=model,
-            )
+        t3_result = ""
+        try:
+            with st.spinner("Stage 2 of 2 — walking upstream (third-order)…"):
+                t3_result = run_third_order_analysis(
+                    second_order_verdict=result,
+                    trend=trend.strip(),
+                    model=model,
+                )
+        except Exception as e:
+            t3_result = f"⚠️ Third-order pass failed: {e}"
 
         entry = {
             "trend":     trend.strip(),
             "result":    result,
-            "t3_result": t3_result,
+            "t3_result": t3_result,   # "" means ran but empty; None reserved for pre-feature archive entries
             "model":     model,
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
         }
@@ -217,10 +221,14 @@ def analysis_tab(key: str, suggested: list[str], model: str = "claude-haiku-4-5-
         st.divider()
         st.subheader("Second-order analysis")
         st.markdown(_render(latest["result"]), unsafe_allow_html=True)
-        if latest.get("t3_result"):
+        t3 = latest.get("t3_result")
+        if t3 is not None:  # None = old run predating this feature; "" = ran but returned empty
             st.divider()
             st.subheader("Third-order upstream pass")
-            st.markdown(_render(latest["t3_result"]), unsafe_allow_html=True)
+            st.markdown(
+                _render(t3) if t3 else "_Third-order analysis returned no output — the model may have hit a token limit. Try running again._",
+                unsafe_allow_html=True,
+            )
 
     # --- History (prior runs, collapsed) -----------------------------------
     if len(history) > 1:

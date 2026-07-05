@@ -350,7 +350,7 @@ def _agentic_loop(system: str, user_message: str, model: str) -> str:
 
         if response.stop_reason != "tool_use":
             for block in response.content:
-                if hasattr(block, "text"):
+                if getattr(block, "type", None) == "text" and block.text:
                     return block.text
             return ""
 

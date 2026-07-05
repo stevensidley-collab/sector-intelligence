@@ -20,7 +20,11 @@ load_dotenv()
 
 ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
 TAVILY_API_KEY    = os.environ["TAVILY_API_KEY"]
-MODEL             = "claude-sonnet-4-6"
+
+MODELS = {
+    "Haiku (faster, cheaper)": "claude-haiku-4-5-20251001",
+    "Sonnet (slower, sharper)": "claude-sonnet-4-6",
+}
 
 _claude = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 _tavily = TavilyClient(api_key=TAVILY_API_KEY)
@@ -135,7 +139,7 @@ def _tavily_search(query: str) -> str:
 # Agentic loop
 # ---------------------------------------------------------------------------
 
-def run_derivative_analysis(trend: str) -> str:
+def run_derivative_analysis(trend: str, model: str = "claude-haiku-4-5-20251001") -> str:
     """
     Run the 3-stage second-derivative analysis for the given trend.
     Claude drives the reasoning; Tavily is called whenever Claude needs
@@ -146,7 +150,7 @@ def run_derivative_analysis(trend: str) -> str:
 
     while True:
         response = _claude.messages.create(
-            model=MODEL,
+            model=model,
             max_tokens=4096,
             system=SYSTEM_PROMPT,
             tools=TOOLS,

@@ -15,7 +15,7 @@ import re
 
 import streamlit as st
 
-from derivative_analysis import run_derivative_analysis
+from derivative_analysis import MODELS, run_derivative_analysis
 
 st.set_page_config(
     page_title="Sector Intelligence",
@@ -24,6 +24,17 @@ st.set_page_config(
 )
 st.title("🔬 Sector Intelligence")
 st.caption("Second-derivative supply-chain analysis · Verified bottleneck hypotheses · Not investment advice")
+
+# Model selector — persists across all tabs for the session
+with st.sidebar:
+    st.header("Model")
+    model_label = st.radio(
+        "Reasoning model",
+        options=list(MODELS.keys()),
+        index=0,  # Haiku by default
+    )
+    selected_model = MODELS[model_label]
+    st.caption("Sonnet reasons more sharply but costs ~5× more per run.")
 
 # ---------------------------------------------------------------------------
 # Link renderer — opens every markdown link in a new tab
@@ -52,7 +63,7 @@ def _render(text: str) -> str:
 # ---------------------------------------------------------------------------
 # Shared analysis widget — renders identically in each tab
 # ---------------------------------------------------------------------------
-def analysis_tab(key: str, suggested: list[str]) -> None:
+def analysis_tab(key: str, suggested: list[str], model: str = "claude-haiku-4-5-20251001") -> None:
     """
     Render a trend selector + run button for one domain tab.
     key        — unique string to namespace Streamlit widget keys
@@ -87,7 +98,7 @@ def analysis_tab(key: str, suggested: list[str]) -> None:
 
     if run and trend.strip():
         with st.spinner("Searching and reasoning through the value chain…"):
-            result = run_derivative_analysis(trend.strip())
+            result = run_derivative_analysis(trend.strip(), model=model)
 
         # Prepend to history so most recent is first
         from datetime import datetime
@@ -133,7 +144,7 @@ with tab_ai:
         "Hyperscaler GPU cluster buildout driving demand for high-bandwidth memory",
         "AI inference workloads shifting to edge devices, driving demand for low-power silicon",
         "AI training scale-up driving demand for advanced packaging and CoWoS capacity",
-    ])
+    ], model=selected_model)
 
 with tab_nuclear:
     st.subheader("Nuclear Energy — Second-Derivative Analysis")
@@ -146,7 +157,7 @@ with tab_nuclear:
         "Western governments de-risking uranium supply chains away from Russian enrichment",
         "SMR licensing momentum creating demand for specialised reactor-grade components",
         "Utility fleet-life extensions driving demand for nuclear fuel fabrication capacity",
-    ])
+    ], model=selected_model)
 
 with tab_quantum:
     st.subheader("Quantum Computing — Second-Derivative Analysis")
@@ -159,4 +170,4 @@ with tab_quantum:
         "Photonic quantum computing scaling driving demand for ultra-low-loss optical fibre",
         "Quantum hardware scale-up driving demand for specialised microwave components and cryogenic electronics",
         "Government quantum investment programmes driving demand for trapped-ion and superconducting qubit foundry capacity",
-    ])
+    ], model=selected_model)

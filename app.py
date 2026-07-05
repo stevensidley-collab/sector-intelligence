@@ -217,9 +217,10 @@ def analysis_tab(key: str, suggested: list[str], model: str = "claude-haiku-4-5-
         st.divider()
         st.subheader("Second-order analysis")
         st.markdown(_render(latest["result"]), unsafe_allow_html=True)
-        st.divider()
-        st.subheader("Third-order upstream pass")
-        st.markdown(_render(latest.get("t3_result") or "_Not available for this run._"), unsafe_allow_html=True)
+        if latest.get("t3_result"):
+            st.divider()
+            st.subheader("Third-order upstream pass")
+            st.markdown(_render(latest["t3_result"]), unsafe_allow_html=True)
 
     # --- History (prior runs, collapsed) -----------------------------------
     if len(history) > 1:
@@ -235,8 +236,8 @@ def analysis_tab(key: str, suggested: list[str], model: str = "claude-haiku-4-5-
                 st.markdown("**Second-order**")
                 st.markdown(_render(entry["result"]), unsafe_allow_html=True)
                 if entry.get("t3_result"):
-                    st.markdown("---")
-                    st.markdown("**Third-order**")
+                    st.divider()
+                    st.markdown("**Third-order upstream pass**")
                     st.markdown(_render(entry["t3_result"]), unsafe_allow_html=True)
 
 

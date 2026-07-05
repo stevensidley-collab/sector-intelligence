@@ -97,6 +97,9 @@ REASONING PROCESS — FOLLOW IN ORDER
 STAGE 1 — PREMISE
 Run 1–2 searches to establish that the trend is real and current. Then write
 one concise paragraph. Do not rely on memory for trend size or direction.
+IMPORTANT: if the user's trend contains multiple components (e.g. "X and Y"),
+you MUST address EVERY component. Do not drop or ignore any part of the stated
+trend. Run separate value-chain analyses for each distinct component.
 
 STAGE 2 — DISCOVERY (search-first)
 Walk the value chain downstream. For each candidate link, SEARCH before

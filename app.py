@@ -11,11 +11,53 @@ suggested prompts. Output is a verified hypothesis, not a recommendation.
 """
 
 import html
+import json
+import os
 import re
+from datetime import datetime
+from pathlib import Path
 
 import streamlit as st
 
 from derivative_analysis import MODELS, run_derivative_analysis
+
+# ---------------------------------------------------------------------------
+# Persistent archive — one JSON record per line in outputs/archive.jsonl
+# ---------------------------------------------------------------------------
+_ARCHIVE_DIR  = Path(__file__).parent / "outputs"
+_ARCHIVE_FILE = _ARCHIVE_DIR / "archive.jsonl"
+_ARCHIVE_DIR.mkdir(exist_ok=True)
+
+
+def _append_to_archive(tab: str, trend: str, result: str, model: str) -> None:
+    record = {
+        "tab":       tab,
+        "trend":     trend,
+        "result":    result,
+        "model":     model,
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
+    }
+    with _ARCHIVE_FILE.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(record) + "\n")
+
+
+def _load_archive_for_tab(tab: str) -> list[dict]:
+    """Return all archived runs for this tab, newest first."""
+    if not _ARCHIVE_FILE.exists():
+        return []
+    records = []
+    with _ARCHIVE_FILE.open(encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rec = json.loads(line)
+                if rec.get("tab") == tab:
+                    records.append(rec)
+            except json.JSONDecodeError:
+                pass
+    return list(reversed(records))  # newest first
 
 st.set_page_config(
     page_title="Sector Intelligence",
@@ -69,10 +111,10 @@ def analysis_tab(key: str, suggested: list[str], model: str = "claude-haiku-4-5-
     key        — unique string to namespace Streamlit widget keys
     suggested  — list of pre-written trend strings for the domain
     """
-    # Initialise per-tab history in session_state
+    # Initialise per-tab history in session_state, seeded from disk archive
     hist_key = f"{key}_history"
     if hist_key not in st.session_state:
-        st.session_state[hist_key] = []  # list of {trend, result, timestamp}
+        st.session_state[hist_key] = _load_archive_for_tab(key)
 
     options = suggested + ["Custom — type below"]
     choice  = st.selectbox("Suggested trend", options, key=f"{key}_select")
@@ -100,11 +142,12 @@ def analysis_tab(key: str, suggested: list[str], model: str = "claude-haiku-4-5-
         with st.spinner("Searching and reasoning through the value chain…"):
             result = run_derivative_analysis(trend.strip(), model=model)
 
-        # Prepend to history so most recent is first
-        from datetime import datetime
+        # Persist to disk, then prepend to in-session history
+        _append_to_archive(key, trend.strip(), result, model)
         st.session_state[hist_key].insert(0, {
-            "trend": trend.strip(),
-            "result": result,
+            "trend":     trend.strip(),
+            "result":    result,
+            "model":     model,
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
         })
 
@@ -119,7 +162,8 @@ def analysis_tab(key: str, suggested: list[str], model: str = "claude-haiku-4-5-
         st.divider()
         st.subheader(f"History ({len(history)} run{'s' if len(history) != 1 else ''})")
         for i, entry in enumerate(history):
-            label = f"**{entry['timestamp']}** — {entry['trend'][:80]}{'…' if len(entry['trend']) > 80 else ''}"
+            model_tag = f" · {entry.get('model', '').split('-')[1] if entry.get('model') else ''}"
+            label = f"**{entry['timestamp']}**{model_tag} — {entry['trend'][:80]}{'…' if len(entry['trend']) > 80 else ''}"
             with st.expander(label, expanded=(i == 0 and not run)):
                 st.markdown(_render(entry["result"]), unsafe_allow_html=True)
 

@@ -594,8 +594,15 @@ def _agentic_loop_local(system: str, user_message: str, on_step=None) -> str:
             ]
         messages.append(assistant_entry)
 
-        if finish_reason != "tool_calls" or not msg.tool_calls:
-            return msg.content or ""
+        if not msg.tool_calls:
+            text = msg.content or ""
+            if not text:
+                return (
+                    "⚠️ The local model returned no output. "
+                    "It may not support tool-use reliably. "
+                    "Try switching to Haiku or Sonnet for this analysis."
+                )
+            return text
 
         for tc in msg.tool_calls:
             try:

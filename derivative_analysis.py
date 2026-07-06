@@ -425,8 +425,17 @@ def _agentic_loop_local(system: str, user_message: str) -> str:
             ]
         messages.append(assistant_entry)
 
-        if finish_reason != "tool_calls" or not msg.tool_calls:
-            return msg.content or ""
+        # Some local models (Gemma) set finish_reason="stop" even when they
+        # produced tool calls — check msg.tool_calls directly, not finish_reason.
+        if not msg.tool_calls:
+            text = msg.content or ""
+            if not text:
+                return (
+                    "⚠️ The local model returned no output. "
+                    "It may not support tool-use reliably. "
+                    "Try switching to Haiku or Sonnet for this analysis."
+                )
+            return text
 
         for tc in msg.tool_calls:
             try:

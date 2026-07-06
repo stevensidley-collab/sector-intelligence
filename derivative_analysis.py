@@ -439,7 +439,14 @@ def _agentic_loop_local(system: str, user_message: str) -> str:
 
 def _agentic_loop(system: str, user_message: str, model: str) -> str:
     if model == "local":
-        return _agentic_loop_local(system, user_message)
+        try:
+            return _agentic_loop_local(system, user_message)
+        except openai.APIConnectionError:
+            return (
+                "⚠️ **Cannot connect to LM Studio** — is it running?\n\n"
+                "Start LM Studio, load a model, and make sure the local server "
+                "is enabled (green light on port 1234), then run again."
+            )
     return _agentic_loop_anthropic(system, user_message, model)
 
 

@@ -17,6 +17,7 @@ import json
 import os
 
 import anthropic
+import openai
 from dotenv import load_dotenv
 from tavily import TavilyClient
 
@@ -25,9 +26,12 @@ load_dotenv()
 ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
 TAVILY_API_KEY    = os.environ["TAVILY_API_KEY"]
 
+LOCAL_BASE_URL = "http://localhost:1234/v1"
+
 MODELS = {
     "Haiku (faster, cheaper)": "claude-haiku-4-5-20251001",
     "Sonnet (slower, sharper)": "claude-sonnet-4-6",
+    "Gemma 4 (local)": "local",
 }
 
 _claude = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
@@ -330,11 +334,39 @@ def _tavily_search(query: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Shared agentic loop
+# Local model helpers
 # ---------------------------------------------------------------------------
 
-def _agentic_loop(system: str, user_message: str, model: str) -> str:
-    """Drive the Claude ↔ Tavily loop for any system prompt and opening message."""
+def _tools_to_openai(tools: list) -> list:
+    return [
+        {
+            "type": "function",
+            "function": {
+                "name": t["name"],
+                "description": t["description"],
+                "parameters": t["input_schema"],
+            },
+        }
+        for t in tools
+    ]
+
+
+def _get_local_model_id() -> str:
+    try:
+        client = openai.OpenAI(base_url=LOCAL_BASE_URL, api_key="lm-studio")
+        for m in client.models.list().data:
+            if "embed" not in m.id.lower():
+                return m.id
+    except Exception:
+        pass
+    return "google/gemma-4-e4b"
+
+
+# ---------------------------------------------------------------------------
+# Agentic loops — Anthropic and local (OpenAI-compatible)
+# ---------------------------------------------------------------------------
+
+def _agentic_loop_anthropic(system: str, user_message: str, model: str) -> str:
     messages = [{"role": "user", "content": user_message}]
 
     while True:
@@ -358,19 +390,57 @@ def _agentic_loop(system: str, user_message: str, model: str) -> str:
         for block in response.content:
             if block.type != "tool_use":
                 continue
-            if block.name == "tavily_search":
-                result = _tavily_search(block.input["query"])
-            else:
-                result = f"Unknown tool: {block.name}"
-            tool_results.append(
-                {
-                    "type": "tool_result",
-                    "tool_use_id": block.id,
-                    "content": result,
-                }
-            )
+            result = _tavily_search(block.input["query"]) if block.name == "tavily_search" else f"Unknown tool: {block.name}"
+            tool_results.append({"type": "tool_result", "tool_use_id": block.id, "content": result})
 
         messages.append({"role": "user", "content": tool_results})
+
+
+def _agentic_loop_local(system: str, user_message: str) -> str:
+    client       = openai.OpenAI(base_url=LOCAL_BASE_URL, api_key="lm-studio")
+    model_id     = _get_local_model_id()
+    openai_tools = _tools_to_openai(TOOLS)
+    messages     = [
+        {"role": "system", "content": system},
+        {"role": "user",   "content": user_message},
+    ]
+
+    while True:
+        response = client.chat.completions.create(
+            model=model_id,
+            messages=messages,
+            tools=openai_tools,
+            max_tokens=4096,
+        )
+
+        msg           = response.choices[0].message
+        finish_reason = response.choices[0].finish_reason
+
+        assistant_entry = {"role": "assistant", "content": msg.content or ""}
+        if msg.tool_calls:
+            assistant_entry["tool_calls"] = [
+                {"id": tc.id, "type": "function",
+                 "function": {"name": tc.function.name, "arguments": tc.function.arguments}}
+                for tc in msg.tool_calls
+            ]
+        messages.append(assistant_entry)
+
+        if finish_reason != "tool_calls" or not msg.tool_calls:
+            return msg.content or ""
+
+        for tc in msg.tool_calls:
+            try:
+                inputs = json.loads(tc.function.arguments)
+            except json.JSONDecodeError:
+                inputs = {}
+            result = _tavily_search(inputs["query"]) if tc.function.name == "tavily_search" else f"Unknown tool: {tc.function.name}"
+            messages.append({"role": "tool", "tool_call_id": tc.id, "content": result})
+
+
+def _agentic_loop(system: str, user_message: str, model: str) -> str:
+    if model == "local":
+        return _agentic_loop_local(system, user_message)
+    return _agentic_loop_anthropic(system, user_message, model)
 
 
 # ---------------------------------------------------------------------------

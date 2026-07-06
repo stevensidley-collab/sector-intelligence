@@ -180,7 +180,9 @@ if prior:
     st.divider()
     st.subheader(f"Prior scans ({len(prior)})")
     for entry in prior:
-        model_tag = entry.get("model", "").split("-")[1] if entry.get("model") else ""
+        _m = entry.get("model", "")
+        _parts = _m.split("-")
+        model_tag = _parts[1] if len(_parts) > 1 else _m
         label = f"**{entry['timestamp']}** · {model_tag}"
         with st.expander(label, expanded=False):
             st.markdown(_render(entry["result"]), unsafe_allow_html=True)

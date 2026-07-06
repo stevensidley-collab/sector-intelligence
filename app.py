@@ -246,7 +246,9 @@ def analysis_tab(key: str, suggested: list[str], model: str = "claude-haiku-4-5-
         prior = history if not ran_this_session else history[1:]
         st.subheader(f"Prior runs ({len(prior)})")
         for i, entry in enumerate(prior, start=1):
-            model_tag = entry.get("model", "").split("-")[1] if entry.get("model") else ""
+            _m = entry.get("model", "")
+            _parts = _m.split("-")
+            model_tag = _parts[1] if len(_parts) > 1 else _m
             label = (
                 f"**{entry['timestamp']}** · {model_tag} — "
                 f"{entry['trend'][:80]}{'…' if len(entry['trend']) > 80 else ''}"

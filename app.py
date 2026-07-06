@@ -171,13 +171,16 @@ def analysis_tab(key: str, suggested: list[str], model: str = "claude-haiku-4-5-
             key=f"{key}_custom",
         )
     else:
-        trend = choice
         st.text_area(
             "Trend (editable)",
-            value=trend,
+            value=choice,
             height=80,
             key=f"{key}_display",
         )
+        # Read back the widget value so edits the user makes are captured.
+        # st.text_area with value= seeds the widget but doesn't override
+        # subsequent edits — those live in session_state under the key.
+        trend = st.session_state.get(f"{key}_display", choice)
 
     run = st.button("Run analysis", type="primary", key=f"{key}_run",
                     disabled=not trend.strip())

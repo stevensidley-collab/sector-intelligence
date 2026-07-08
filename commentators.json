@@ -1,0 +1,332 @@
+[
+  {
+    "name": "Ben Thompson",
+    "outlet": "Stratechery",
+    "tier": 1,
+    "weight": 1.0,
+    "role": "citable_source",
+    "platforms": ["newsletter", "podcast", "X"],
+    "search_terms": [
+      "Ben Thompson Stratechery latest 2026",
+      "Ben Thompson Stratechery recent essay focus 2026",
+      "Stratechery new topic sector 2026"
+    ]
+  },
+  {
+    "name": "Matt Levine",
+    "outlet": "Money Stuff (Bloomberg)",
+    "tier": 1,
+    "weight": 1.0,
+    "role": "citable_source",
+    "platforms": ["newsletter"],
+    "search_terms": [
+      "Matt Levine Money Stuff Bloomberg recent 2026",
+      "Matt Levine Money Stuff focus topic 2026",
+      "Matt Levine Bloomberg newsletter latest theme 2026"
+    ]
+  },
+  {
+    "name": "Tyler Cowen",
+    "outlet": "Marginal Revolution",
+    "tier": 1,
+    "weight": 1.0,
+    "role": "citable_source",
+    "platforms": ["blog", "podcast", "X"],
+    "search_terms": [
+      "Tyler Cowen Marginal Revolution recent 2026",
+      "Tyler Cowen latest writing focus 2026",
+      "Marginal Revolution new theme sector 2026"
+    ]
+  },
+  {
+    "name": "Ethan Mollick",
+    "outlet": "One Useful Thing",
+    "tier": 1,
+    "weight": 1.0,
+    "role": "citable_source",
+    "platforms": ["newsletter", "X"],
+    "search_terms": [
+      "Ethan Mollick One Useful Thing recent 2026",
+      "Ethan Mollick latest newsletter focus 2026",
+      "Ethan Mollick new topic writing 2026"
+    ]
+  },
+  {
+    "name": "Noah Smith",
+    "outlet": "Noahpinion",
+    "tier": 1,
+    "weight": 1.0,
+    "role": "citable_source",
+    "platforms": ["newsletter", "X"],
+    "search_terms": [
+      "Noah Smith Noahpinion recent 2026",
+      "Noah Smith Noahpinion latest focus 2026",
+      "Noahpinion new essay theme sector 2026"
+    ]
+  },
+  {
+    "name": "Dylan Patel",
+    "outlet": "SemiAnalysis",
+    "tier": 1,
+    "weight": 1.0,
+    "role": "citable_source",
+    "platforms": ["newsletter", "podcast", "X"],
+    "search_terms": [
+      "Dylan Patel SemiAnalysis recent 2026",
+      "SemiAnalysis latest report focus 2026",
+      "Dylan Patel SemiAnalysis new topic 2026"
+    ]
+  },
+  {
+    "name": "Zvi Mowshowitz",
+    "outlet": "Don't Worry About the Vase",
+    "tier": 1,
+    "weight": 1.0,
+    "role": "citable_source",
+    "platforms": ["blog", "newsletter"],
+    "search_terms": [
+      "Zvi Mowshowitz recent writing 2026",
+      "Zvi Mowshowitz Don't Worry About the Vase latest 2026",
+      "Zvi Mowshowitz new focus topic 2026"
+    ]
+  },
+  {
+    "name": "Byrne Hobart",
+    "outlet": "The Diff",
+    "tier": 1,
+    "weight": 1.0,
+    "role": "citable_source",
+    "platforms": ["newsletter"],
+    "search_terms": [
+      "Byrne Hobart The Diff recent 2026",
+      "Byrne Hobart latest newsletter focus 2026",
+      "The Diff new theme sector 2026"
+    ]
+  },
+  {
+    "name": "Joe Weisenthal & Tracy Alloway",
+    "outlet": "Odd Lots (Bloomberg)",
+    "tier": 1,
+    "weight": 1.0,
+    "role": "citable_source",
+    "platforms": ["podcast", "newsletter"],
+    "search_terms": [
+      "Odd Lots Bloomberg recent episode topic 2026",
+      "Odd Lots Joe Weisenthal Tracy Alloway latest 2026",
+      "Odd Lots Bloomberg new focus sector 2026"
+    ]
+  },
+  {
+    "name": "Marc Andreessen",
+    "outlet": "a16z",
+    "tier": 1,
+    "weight": 1.0,
+    "role": "citable_source",
+    "platforms": ["essay", "podcast", "X"],
+    "search_terms": [
+      "Marc Andreessen recent essay writing 2026",
+      "Marc Andreessen a16z latest public commentary 2026",
+      "Marc Andreessen X podcast focus 2026"
+    ],
+    "notes": "DUAL-TRACKED: fund/deployment actions in capital_allocators.json. This entry covers published words only (essays, podcast appearances, X). Do not double-count fund actions here."
+  },
+  {
+    "name": "Lyn Alden",
+    "outlet": "lynalden.com",
+    "tier": 1,
+    "weight": 1.0,
+    "role": "citable_source",
+    "platforms": ["newsletter", "X", "podcast"],
+    "search_terms": [
+      "Lyn Alden recent newsletter focus 2026",
+      "Lyn Alden lynalden.com latest writing 2026",
+      "Lyn Alden new theme sector 2026"
+    ]
+  },
+  {
+    "name": "Dwarkesh Patel",
+    "outlet": "Dwarkesh Podcast",
+    "tier": 1,
+    "weight": 1.0,
+    "role": "citable_source",
+    "platforms": ["podcast", "X"],
+    "search_terms": [
+      "Dwarkesh Patel podcast recent episode topic 2026",
+      "Dwarkesh Patel latest interview focus 2026",
+      "Dwarkesh Podcast new guest sector theme 2026"
+    ]
+  },
+  {
+    "name": "Benedict Evans",
+    "outlet": "ben-evans.com",
+    "tier": 1,
+    "weight": 1.0,
+    "role": "citable_source",
+    "platforms": ["newsletter", "X", "presentations"],
+    "search_terms": [
+      "Benedict Evans recent newsletter 2026",
+      "Benedict Evans ben-evans.com latest focus 2026",
+      "Benedict Evans new essay theme 2026"
+    ]
+  },
+  {
+    "name": "Michael Cembalest",
+    "outlet": "JPMorgan Eye on the Market",
+    "tier": 1,
+    "weight": 1.0,
+    "role": "citable_source",
+    "platforms": ["newsletter"],
+    "search_terms": [
+      "Michael Cembalest Eye on the Market recent 2026",
+      "JPMorgan Eye on the Market latest report 2026",
+      "Michael Cembalest JPMorgan focus theme 2026"
+    ]
+  },
+  {
+    "name": "Kyla Scanlon",
+    "outlet": "Kyla's Newsletter",
+    "tier": 1,
+    "weight": 1.0,
+    "role": "citable_source",
+    "platforms": ["newsletter", "video", "X"],
+    "search_terms": [
+      "Kyla Scanlon recent newsletter 2026",
+      "Kyla Scanlon latest focus topic 2026",
+      "Kyla Scanlon new writing theme 2026"
+    ]
+  },
+  {
+    "name": "Doomberg",
+    "outlet": "Doomberg",
+    "tier": 1,
+    "weight": 1.0,
+    "role": "citable_source",
+    "platforms": ["newsletter", "podcast"],
+    "search_terms": [
+      "Doomberg recent newsletter 2026",
+      "Doomberg latest focus sector 2026",
+      "Doomberg new essay theme energy 2026"
+    ]
+  },
+  {
+    "name": "Marc Rubinstein",
+    "outlet": "Net Interest",
+    "tier": 1,
+    "weight": 1.0,
+    "role": "citable_source",
+    "platforms": ["newsletter"],
+    "search_terms": [
+      "Marc Rubinstein Net Interest recent 2026",
+      "Net Interest newsletter latest focus 2026",
+      "Marc Rubinstein new essay theme finance 2026"
+    ]
+  },
+  {
+    "name": "Azeem Azhar",
+    "outlet": "Exponential View",
+    "tier": 2,
+    "weight": 0.5,
+    "role": "narrative_signal",
+    "platforms": ["newsletter", "podcast"],
+    "search_terms": [
+      "Azeem Azhar Exponential View recent 2026",
+      "Exponential View latest focus theme 2026",
+      "Azeem Azhar new essay topic 2026"
+    ]
+  },
+  {
+    "name": "Packy McCormick",
+    "outlet": "Not Boring",
+    "tier": 2,
+    "weight": 0.5,
+    "role": "narrative_signal",
+    "platforms": ["newsletter"],
+    "search_terms": [
+      "Packy McCormick Not Boring recent 2026",
+      "Not Boring newsletter latest focus 2026",
+      "Packy McCormick new essay theme sector 2026"
+    ]
+  },
+  {
+    "name": "Derek Thompson",
+    "outlet": "The Atlantic / Plain English",
+    "tier": 2,
+    "weight": 0.5,
+    "role": "narrative_signal",
+    "platforms": ["newsletter", "podcast", "X"],
+    "search_terms": [
+      "Derek Thompson Plain English recent 2026",
+      "Derek Thompson The Atlantic latest focus 2026",
+      "Derek Thompson new essay topic 2026"
+    ]
+  },
+  {
+    "name": "Peter Diamandis",
+    "outlet": "Moonshots / Abundance",
+    "tier": 2,
+    "weight": 0.5,
+    "role": "narrative_signal",
+    "platforms": ["newsletter", "podcast", "X"],
+    "moonshots_panel": true,
+    "search_terms": [
+      "Peter Diamandis Moonshots recent focus 2026",
+      "Moonshots podcast latest episode topic 2026",
+      "Peter Diamandis Abundance new theme 2026"
+    ]
+  },
+  {
+    "name": "Emad Mostaque",
+    "outlet": "Intelligent Internet / The Last Economy",
+    "tier": 3,
+    "weight": 0.25,
+    "role": "retail_leading_indicator",
+    "platforms": ["podcast", "X"],
+    "search_terms": [
+      "Emad Mostaque recent 2026",
+      "Emad Mostaque Intelligent Internet latest focus 2026",
+      "Emad Mostaque new theme sector 2026"
+    ]
+  },
+  {
+    "name": "Alexander Wissner-Gross",
+    "outlet": "Reified / Moonshots panel",
+    "tier": 3,
+    "weight": 0.25,
+    "role": "retail_leading_indicator",
+    "platforms": ["podcast", "X"],
+    "moonshots_panel": true,
+    "search_terms": [
+      "Alexander Wissner-Gross recent 2026",
+      "Alexander Wissner-Gross Moonshots focus 2026",
+      "Wissner-Gross new theme sector 2026"
+    ]
+  },
+  {
+    "name": "Dave Blundin",
+    "outlet": "Link Ventures / Moonshots panel",
+    "tier": 3,
+    "weight": 0.25,
+    "role": "retail_leading_indicator",
+    "platforms": ["podcast"],
+    "moonshots_panel": true,
+    "search_terms": [
+      "Dave Blundin Link Ventures recent 2026",
+      "Dave Blundin Moonshots focus 2026",
+      "Dave Blundin new theme sector 2026"
+    ]
+  },
+  {
+    "name": "Salim Ismail",
+    "outlet": "OpenExO / Moonshots panel",
+    "tier": 3,
+    "weight": 0.25,
+    "role": "retail_leading_indicator",
+    "platforms": ["podcast", "newsletter", "X"],
+    "moonshots_panel": true,
+    "search_terms": [
+      "Salim Ismail OpenExO recent 2026",
+      "Salim Ismail Moonshots focus 2026",
+      "Salim Ismail new theme sector 2026"
+    ]
+  }
+]

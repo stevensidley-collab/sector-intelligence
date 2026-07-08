@@ -43,15 +43,33 @@ _tavily = TavilyClient(api_key=TAVILY_API_KEY)
 
 # ---------------------------------------------------------------------------
 # Load commentators
+# Schema: name, outlet, tier (1|2|3), weight (float),
+#         role (citable_source|narrative_signal|retail_leading_indicator),
+#         platforms (array), search_terms (array), moonshots_panel (bool),
+#         notes (optional string)
+#
+# NOTE: this file is also the intended input roster for the future
+# heartbeat agent (weekly full-corpus reader with stored state and
+# position-change detection). The platforms array is included for that
+# agent's use; regime_radar only uses search_terms today.
 # ---------------------------------------------------------------------------
 _COMMENTATORS_FILE = Path(__file__).parent / "commentators.json"
 _ALL_COMMENTATORS  = json.loads(_COMMENTATORS_FILE.read_text())
-_ACTIVE            = [c for c in _ALL_COMMENTATORS if c.get("active")]
 
-_COMMENTATOR_BLOCK = "\n".join(
-    f'  • {c["name"]} ({c["vehicle"]}) — {c["focus"]} [{c["type"]}]'
-    for c in _ACTIVE
-)
+_TIER1 = [c for c in _ALL_COMMENTATORS if c["tier"] == 1]
+_TIER2 = [c for c in _ALL_COMMENTATORS if c["tier"] == 2]
+_TIER3 = [c for c in _ALL_COMMENTATORS if c["tier"] == 3]
+
+
+def _commentator_entry(c: dict) -> str:
+    terms = "; ".join(f'"{t}"' for t in c.get("search_terms", []))
+    note  = f'\n    NOTE: {c["notes"]}' if c.get("notes") else ""
+    return f'  • {c["name"]} ({c["outlet"]})\n    Search: {terms}{note}'
+
+
+_TIER1_BLOCK = "\n".join(_commentator_entry(c) for c in _TIER1)
+_TIER2_BLOCK = "\n".join(_commentator_entry(c) for c in _TIER2)
+_TIER3_BLOCK = "\n".join(_commentator_entry(c) for c in _TIER3)
 
 # ---------------------------------------------------------------------------
 # Load capital allocators — feed Signal 2 (Fund Formation)
@@ -162,20 +180,55 @@ issuance, underperformance vs expectations, analyst downgrades on crowded
 names. Be careful to distinguish healthy corrections from genuine outflows.
 
 SIGNAL 4 — COMMENTATOR ATTENTION DRIFT (softer corroborator)
-Search for the RECENT published focus of each tracked commentator below.
-Detect ATTENTION DRIFT: where are they shifting focus, and especially are
-voices who championed the current themes now getting bored or pointing
-elsewhere? You are tracking drift in attention, not endorsing their calls.
-Do NOT simply report what they are saying — identify directional drift.
+Detect ATTENTION DRIFT across 25 tracked voices, weighted by tier.
+You are tracking drift in attention, not endorsing their calls or views.
+Do NOT report what they are saying — identify directional CHANGE in focus.
 
-Tracked commentators (search each active one for recent output):
-{_COMMENTATOR_BLOCK}
+QUERY CONSTRUCTION
+For each commentator, run their listed search_terms as Tavily queries
+(already current-dated). Then assess: still on current themes / drifting
+toward X / unclear. Only flag as drift if the shift is explicit and recent
+(within this quarter). Use discovery-first discipline — search, then assess.
 
-For each commentator: run a search like
-  "[Name] [vehicle] recent focus 2026"
-  "[Name] latest writing topic Q1 2026"
-Then note: still focused on current themes / attention drifting toward X /
-unclear. Only flag as a rotation signal if drift is explicit and recent.
+TIER 1 — Citable sources (weight 1.0 each). Drift here is a strong
+corroborator. These are primary analytical voices whose attention shifts
+reflect genuine informational development, not narrative amplification.
+{_TIER1_BLOCK}
+
+TIER 2 — Narrative signal (weight 0.5 each). Drift here indicates a story
+is spreading from originators to amplifiers — useful for timing, not origin.
+{_TIER2_BLOCK}
+
+TIER 3 — Retail leading indicator (weight 0.25 each). Drift here predicts
+what the retail techno-optimist crowd will believe in ~1–2 quarters. Useful
+for exhaustion/crowding detection. NOT evidence a rotation is real.
+{_TIER3_BLOCK}
+
+MOONSHOTS DE-DUPLICATION RULE
+Diamandis, Wissner-Gross, Blundin, and Ismail frequently co-appear on the
+Moonshots podcast. A single Moonshots episode counts as ONE attention event
+at the highest applicable tier weight (Tier 2 for Diamandis / 0.5), NOT
+four separate events. Search for Moonshots episode topics separately:
+  "Moonshots podcast recent episode topic 2026"
+and attribute it as one event if the evidence comes from a shared episode.
+
+SCORING
+Compute a weighted attention-drift score for each candidate sector:
+  score = sum of weights of distinct commentators showing drift toward it
+Report this score alongside the candidate.
+
+STRENGTH THRESHOLDS
+  "strong commentator signal"   — score ≥ 2.0 AND includes ≥ 2 Tier 1 voices
+  "moderate commentator signal" — score ≥ 1.0 OR at least 1 Tier 1 voice
+  "weak commentator signal"     — score > 0 but below moderate threshold
+  "no commentator signal"       — score = 0
+
+DIVERGENCE FLAG — INVERTED SIGNAL
+If Tier 3 drift toward a theme is high (score > 0.5 from Tier 3 alone)
+while Tier 1 attention is flat or declining, flag explicitly:
+  ⚠️ RETAIL-ONLY NARRATIVE — Tier 3 voices active, Tier 1 flat/absent.
+  This is a possible late-stage crowding or exhaustion signal, not
+  rotation evidence. Treat as a contrary indicator, not corroboration.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 CONVERGENCE IS THE KEY TELL
@@ -314,9 +367,26 @@ news, slowing issuance. Note explicitly: correction or departure?
 If nothing material: say so.
 
 ## SIGNAL 4: COMMENTATOR ATTENTION DRIFT
+
+### Per-commentator findings
 For each commentator searched, one line:
-  [Name] — [still on current themes / drifting toward X / unclear] — [source date]
-Summarise any clear directional cluster across multiple commentators.
+  [Name] (Tier N, w=X) — [still on current themes / drifting toward Y / unclear] — [source date]
+Skip commentators where no usable search result was found; note count skipped.
+
+### Moonshots de-duplication
+If a Moonshots episode was found: list it once as one event (Tier 2 / w=0.5).
+
+### Weighted scores by candidate sector
+For each sector attracting drift, show:
+  [Sector]: score=[X] — voices: [Name (T1/T2/T3), ...]
+  Strength: [strong / moderate / weak / none]
+
+### Divergence flags
+List any sectors where Tier 3 drift is high and Tier 1 is flat:
+  ⚠️ RETAIL-ONLY NARRATIVE: [sector] — [Tier 3 voices] active, Tier 1 flat/absent
+
+### Commentator signal summary
+One paragraph: what does the weighted drift picture show overall?
 
 ## DEEP-READ SOURCES
 List every source you web_fetched, with outcome:
